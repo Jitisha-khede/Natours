@@ -16,7 +16,7 @@ exports.getAllTours = async (req,res) =>{
 
     let query = Tour.find(JSON.parse(queryStr));
 
-    //3)Sorting
+    //2)Sorting
     if(req.query.sort){
         const sortBy = req.query.sort.split(',').join(' ');//to solve case of tie we give another param
         query = query.sort(sortBy);
@@ -25,7 +25,15 @@ exports.getAllTours = async (req,res) =>{
     else{
         query = query.sort('-createdAt');
     }
-    
+
+    //3) field limiting
+    if(req.query.fields){
+        const fields = req.query.fields.split(',').join(' '); 
+        query = query.select(fields);
+    }
+    else{
+        query = query.select('-__v'); //- is used to exclude, __v is internally used by mngoose we will not send it to user
+    }
 
     //EXECUTE QUERY
     const tours = await query;
