@@ -1,4 +1,5 @@
 const Tour = require('./../model/tourModel');
+const APIFeatures = require('./../utils/apiFeatures')
 //const tours = JSON.parse(fs.readFileSync(`${__dirname}/../dev-data/data/tours-simple.json`));
 
 exports.aliasTopTours = (req,res,next)=>{
@@ -8,53 +9,12 @@ exports.aliasTopTours = (req,res,next)=>{
     next();
 }
 
+
 exports.getAllTours = async (req,res) =>{
     try{
-        //BUILD QUERY
-        //1A)Filtering
-        const queryObj = {...req.query};
-        const excludeFields = ['page','sort','limit','fields'];//excluding these 4 from url
-        excludeFields.forEach(el => delete queryObj[el]);
-
-        //1B) Advemced filtering
-        let queryStr  =  JSON.stringify(queryObj); 
-        queryStr = queryStr.replace(/\b(gte|gt|lte|lt)\b/g,match => `$${match}`);
-
-        let query = Tour.find(JSON.parse(queryStr));
-
-        //2)Sorting
-        if(req.query.sort){
-            const sortBy = req.query.sort.split(',').join(' ');//to solve case of tie we give another param
-            query = query.sort(sortBy);
-            //sort('price ratingsAverage') 
-        }
-        else{
-            query = query.sort('-createdAt');
-        }
-
-        //3) field limiting
-        if(req.query.fields){
-            const fields = req.query.fields.split(',').join(' '); 
-            query = query.select(fields);
-        }
-        else{
-            query = query.select('-__v'); //- is used to exclude, __v is internally used by mngoose we will not send it to user
-        }
-
-        //4)pagination -> how many results - limit page number - page
-        const page = req.query.page * 1 || 1; // *1 to convert to integer and || to set a default val
-        const limit = req.query.limit * 1 || 100;
-        const skip = (page - 1) * limit;
-
-        query = query.skip(skip).limit(limit);
-
-        if(req.query.page){
-            const numTours = await Tour.countDocuments(); //counts number of documents and return a promise
-            if(skip>=numTours) throw new error('This page does not exist');
-        }
-
         //EXECUTE QUERY
-        const tours = await query;
+        const features = new APIFeatures(Tour.find(),req.query).filter().sort().limitFields().paginate();
+        const tours = await features.query;
 
         //SEND RESPONSE
         res.status(200).json({
