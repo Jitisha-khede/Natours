@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const slugify = require('slugify');
 const tourSchema = new mongoose.Schema({
     name:{
         type:String,
@@ -6,6 +7,7 @@ const tourSchema = new mongoose.Schema({
         unique: true,
         trim: true
     },
+    slug: String,
     duration:{
         type: Number,
         required:[true,'A tour must have a duration']
@@ -61,6 +63,28 @@ const tourSchema = new mongoose.Schema({
 tourSchema.virtual('durationWeeks').get( function() {
     return this.duration / 7;
 });// we cannot do operations on this since it is virtual it will be displayed on output
+
+//4 types of middlewares in mongoose
+//1)document mw
+//2)query mw
+//3)aggregate mw
+//4)model mw
+
+//DOCUMENT MIDDLEWARE: runs before .save() and .create()
+tourSchema.pre('save',function(next){
+    this.slug = slugify(this.name,{ lower: true});
+    next();
+});
+
+// tourSchema.pre('save',function(next){
+//     console.log('Will save Document...');
+//     next();
+// });
+
+// tourSchema.post('save',function(doc,next){
+//     console.log(doc);
+//     next();
+// })
 
 const Tour = mongoose.model('Tour',tourSchema);
 module.exports = Tour;
