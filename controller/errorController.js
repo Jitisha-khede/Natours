@@ -6,6 +6,16 @@ handleCastErrorDB = err => {
     return new AppError(message,400)
 }
 
+handleDuplicateFields = err => {
+    const field = Object.keys(err.keyValue)[0]; // Get the field name (e.g., "name")
+    const value = err.keyValue[field]; 
+    console.log(value);
+
+    const message = `Duplicate field value: ${value}. Please use another value`;
+
+    return new AppError(message,400);
+}
+
 sendErrorDev = (err,res) => {
     res.status(err.statusCode).json({
         status: err.status,
@@ -46,6 +56,7 @@ module.exports = (err,req,res,next) => {
         let error = {...err};
 
         if(error.name === 'CastError') error = handleCastErrorDB(error);
+        if(error.code === 11000) error = handleDuplicateFields(error);
         sendErrorProd(error,res);
     }
 
